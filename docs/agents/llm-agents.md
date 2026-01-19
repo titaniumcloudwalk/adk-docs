@@ -519,7 +519,7 @@ Control whether the agent receives the prior conversation history.
 ### Planner
 
 <div class="language-support-tag" title="">
-   <span class="lst-supported">Supported in ADK</span><span class="lst-python">Python v0.1.0</span>
+   <span class="lst-supported">Supported in ADK</span><span class="lst-python">Python v0.1.0</span><span class="lst-typescript">TypeScript v0.2.0</span>
 </div>
 
 **`planner` (Optional):** Assign a `BasePlanner` instance to enable multi-step reasoning and planning before execution. There are two main planners:
@@ -528,35 +528,71 @@ Control whether the agent receives the prior conversation history.
 
     Here, the `thinking_budget` parameter guides the model on the number of thinking tokens to use when generating a response. The `include_thoughts` parameter controls whether the model should include its raw thoughts and internal reasoning process in the response.
 
-    ```python
-    from google.adk import Agent
-    from google.adk.planners import BuiltInPlanner
-    from google.genai import types
+    === "Python"
 
-    my_agent = Agent(
-        model="gemini-2.5-flash",
-        planner=BuiltInPlanner(
-            thinking_config=types.ThinkingConfig(
-                include_thoughts=True,
-                thinking_budget=1024,
-            )
-        ),
-        # ... your tools here
-    )
-    ```
+        ```python
+        from google.adk import Agent
+        from google.adk.planners import BuiltInPlanner
+        from google.genai import types
+
+        my_agent = Agent(
+            model="gemini-2.5-flash",
+            planner=BuiltInPlanner(
+                thinking_config=types.ThinkingConfig(
+                    include_thoughts=True,
+                    thinking_budget=1024,
+                )
+            ),
+            # ... your tools here
+        )
+        ```
+
+    === "TypeScript"
+
+        ```typescript
+        import { LlmAgent, BuiltInPlanner } from '@google/adk';
+        import { ThinkingConfig } from '@google/genai';
+
+        const thinkingConfig: ThinkingConfig = {
+            includeThoughts: true,
+            thinkingBudget: 1024,
+        };
+
+        const myAgent = new LlmAgent({
+            model: 'gemini-2.5-flash',
+            name: 'planning_agent',
+            planner: new BuiltInPlanner({ thinkingConfig }),
+            // ... your tools here
+        });
+        ```
 
 * **`PlanReActPlanner`:** This planner instructs the model to follow a specific structure in its output: first create a plan, then execute actions (like calling tools), and provide reasoning for its steps. *It's particularly useful for models that don't have a built-in "thinking" feature*.
 
-    ```python
-    from google.adk import Agent
-    from google.adk.planners import PlanReActPlanner
+    === "Python"
 
-    my_agent = Agent(
-        model="gemini-2.5-flash",
-        planner=PlanReActPlanner(),
-        # ... your tools here
-    )
-    ```
+        ```python
+        from google.adk import Agent
+        from google.adk.planners import PlanReActPlanner
+
+        my_agent = Agent(
+            model="gemini-2.5-flash",
+            planner=PlanReActPlanner(),
+            # ... your tools here
+        )
+        ```
+
+    === "TypeScript"
+
+        ```typescript
+        import { LlmAgent, PlanReActPlanner } from '@google/adk';
+
+        const myAgent = new LlmAgent({
+            model: 'gemini-2.5-flash',
+            name: 'react_planning_agent',
+            planner: new PlanReActPlanner(),
+            // ... your tools here
+        });
+        ```
 
     The agent's response will follow a structured format:
 
@@ -698,7 +734,7 @@ call_agent("If it's raining in New York right now, what is the current temperatu
 ### Code Execution
 
 <div class="language-support-tag">
-   <span class="lst-supported">Supported in ADK</span><span class="lst-python">Python v0.1.0</span><span class="lst-java">Java v0.1.0</span>
+   <span class="lst-supported">Supported in ADK</span><span class="lst-python">Python v0.1.0</span><span class="lst-typescript">TypeScript v0.2.0</span><span class="lst-java">Java v0.1.0</span>
 </div>
 
 - **`code_executor` (Optional):** Provide a `BaseCodeExecutor` instance to allow
@@ -709,6 +745,19 @@ call_agent("If it's raining in New York right now, what is the current temperatu
 
     ```python
     --8<-- "examples/python/snippets/tools/built-in-tools/code_execution.py"
+    ```
+
+=== "TypeScript"
+
+    ```typescript
+    import { LlmAgent, BuiltInCodeExecutor } from '@google/adk';
+
+    const codeExecutionAgent = new LlmAgent({
+        model: 'gemini-2.5-flash',
+        name: 'code_execution_agent',
+        instruction: 'You are a helpful agent that can execute Python code to solve problems.',
+        codeExecutor: new BuiltInCodeExecutor(),
+    });
     ```
 
 === "Java"
