@@ -1,7 +1,7 @@
 # Get action confirmation for ADK Tools
 
 <div class="language-support-tag">
-  <span class="lst-supported">Supported in ADK</span><span class="lst-python">Python v1.14.0</span><span class="lst-preview">Experimental</span>
+  <span class="lst-supported">Supported in ADK</span><span class="lst-python">Python v1.14.0</span><span class="lst-typescript">TypeScript v0.2.0</span><span class="lst-preview">Experimental</span>
 </div>
 
 Some agent workflows require confirmation for decision making, verification,
@@ -52,17 +52,47 @@ example, if you have a tool called `reimburse`, you can enable a confirmation
 step by wrapping it with the `FunctionTool` class and setting the
 `require_confirmation` parameter to `True`, as shown in the following example:
 
-```
-# From agent.py
-root_agent = Agent(
-   ...
-   tools=[
-        # Set require_confirmation to True to require user confirmation
-        # for the tool call.
-        FunctionTool(reimburse, require_confirmation=True),
-    ],
-...
-```
+=== "Python"
+
+    ```python
+    # From agent.py
+    root_agent = Agent(
+       ...
+       tools=[
+            # Set require_confirmation to True to require user confirmation
+            # for the tool call.
+            FunctionTool(reimburse, require_confirmation=True),
+        ],
+    ...
+    ```
+
+=== "TypeScript"
+
+    ```typescript
+    import { LlmAgent, FunctionTool } from '@google/adk';
+    import { z } from 'zod';
+
+    const reimburseSchema = z.object({
+        amount: z.number().describe('The reimbursement amount'),
+        purpose: z.string().describe('The purpose of the reimbursement'),
+    });
+
+    const reimburseTool = new FunctionTool({
+        name: 'reimburse',
+        description: 'Process a reimbursement request',
+        parameters: reimburseSchema,
+        execute: async ({ amount, purpose }) => {
+            return { status: 'success', message: `Reimbursed $${amount} for ${purpose}` };
+        },
+        // Set requireConfirmation to true to require user confirmation
+        requireConfirmation: true,
+    });
+
+    const rootAgent = new LlmAgent({
+        // ...
+        tools: [reimburseTool],
+    });
+    ```
 
 This implementation method requires minimal code, but is limited to simple
 approvals from the user or confirming system. For a complete example of this
@@ -76,26 +106,82 @@ You can modify the behavior `require_confirmation` response by replacing its
 input value with a function that returns a boolean response. The following
 example shows a function for determining if a confirmation is required:
 
-```
-async def confirmation_threshold(
-    amount: int, tool_context: ToolContext
-) -> bool:
-  """Returns true if the amount is greater than 1000."""
-  return amount > 1000
-```
+=== "Python"
 
-This function than then be set as the parameter value for the
-`require_confirmation` parameter:
+    ```python
+    async def confirmation_threshold(
+        amount: int, tool_context: ToolContext
+    ) -> bool:
+      """Returns true if the amount is greater than 1000."""
+      return amount > 1000
+    ```
 
-```
-root_agent = Agent(
-   ...
-   tools=[
-        # Set require_confirmation to True to require user confirmation
-        FunctionTool(reimburse, require_confirmation=confirmation_threshold),
-    ],
-...
-```
+    This function then can be set as the parameter value for the
+    `require_confirmation` parameter:
+
+    ```python
+    root_agent = Agent(
+       ...
+       tools=[
+            # Set require_confirmation to True to require user confirmation
+            FunctionTool(reimburse, require_confirmation=confirmation_threshold),
+        ],
+    ...
+    ```
+
+=== "TypeScript"
+
+    ```typescript
+    import { LlmAgent, FunctionTool, ToolContext } from '@google/adk';
+    import { z } from 'zod';
+
+    const reimburseSchema = z.object({
+        amount: z.number().describe('The reimbursement amount'),
+        purpose: z.string().describe('The purpose of the reimbursement'),
+    });
+
+    // Confirmation threshold function - returns true if amount > 1000
+    const confirmationThreshold = (
+        args: { amount: number; purpose: string },
+        toolContext: ToolContext
+    ): boolean => {
+        return args.amount > 1000;
+    };
+
+    const reimburseTool = new FunctionTool({
+        name: 'reimburse',
+        description: 'Process a reimbursement request',
+        parameters: reimburseSchema,
+        execute: async ({ amount, purpose }) => {
+            return { status: 'success', message: `Reimbursed $${amount} for ${purpose}` };
+        },
+        // Use callable predicate for dynamic confirmation
+        requireConfirmation: confirmationThreshold,
+    });
+
+    const rootAgent = new LlmAgent({
+        // ...
+        tools: [reimburseTool],
+    });
+    ```
+
+    You can also use async predicates:
+
+    ```typescript
+    // Async confirmation threshold function
+    const asyncConfirmationThreshold = async (
+        args: { amount: number; purpose: string },
+        toolContext: ToolContext
+    ): Promise<boolean> => {
+        // You can access both args and toolContext
+        return args.amount > 1000;
+    };
+
+    const reimburseTool = new FunctionTool({
+        // ...
+        requireConfirmation: asyncConfirmationThreshold,
+    });
+    ```
 
 For a complete example of this implementation, see the
 [human_tool_confirmation](https://github.com/google/adk-python/blob/fc90ce968f114f84b14829f8117797a4c256d710/contributing/samples/human_tool_confirmation/agent.py)

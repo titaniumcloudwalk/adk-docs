@@ -1,7 +1,7 @@
 # Bidi-streaming (live) in ADK
 
 <div class="language-support-tag">
-    <span class="lst-supported">Supported in ADK</span><span class="lst-python">Python v0.5.0</span><span class="lst-preview">Experimental</span>
+    <span class="lst-supported">Supported in ADK</span><span class="lst-python">Python v0.5.0</span><span class="lst-typescript">TypeScript v0.2.0</span><span class="lst-preview">Experimental</span>
 </div>
   
 Bidirectional (Bidi) streaming (live) in ADK adds the low-latency bidirectional voice and video interaction

@@ -17,58 +17,107 @@ The following example will assume the following agent directory structure
 ```
 working_dir/
 ├── weather_agent/
-│   ├── agent.py
+│   ├── agent.py       # Python
 │   └── __init__.py
+├── weather_agent_ts/
+│   ├── agent.ts       # TypeScript
+│   └── package.json
 └── deploy_agent_engine.py
 └── deploy_fast_api_app.py
 └── agent_runner.py
+└── agent_runner.ts
 ```
 
-```python
-# weather_agent/agent.py
+=== "Python"
 
-import os
-from google.adk.agents import Agent
+    ```python
+    # weather_agent/agent.py
 
-os.environ.setdefault("GOOGLE_CLOUD_PROJECT", "{your-project-id}")
-os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
-os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
+    import os
+    from google.adk.agents import Agent
 
-
-# Define a tool function
-def get_weather(city: str) -> dict:
-    """Retrieves the current weather report for a specified city.
-
-    Args:
-        city (str): The name of the city for which to retrieve the weather report.
-
-    Returns:
-        dict: status and result or error msg.
-    """
-    if city.lower() == "new york":
-        return {
-            "status": "success",
-            "report": (
-                "The weather in New York is sunny with a temperature of 25 degrees"
-                " Celsius (77 degrees Fahrenheit)."
-            ),
-        }
-    else:
-        return {
-            "status": "error",
-            "error_message": f"Weather information for '{city}' is not available.",
-        }
+    os.environ.setdefault("GOOGLE_CLOUD_PROJECT", "{your-project-id}")
+    os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
+    os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
 
 
-# Create an agent with tools
-root_agent = Agent(
-    name="weather_agent",
-    model="gemini-2.5-flash",
-    description="Agent to answer questions using weather tools.",
-    instruction="You must use the available tools to find an answer.",
-    tools=[get_weather],
-)
-```
+    # Define a tool function
+    def get_weather(city: str) -> dict:
+        """Retrieves the current weather report for a specified city.
+
+        Args:
+            city (str): The name of the city for which to retrieve the weather report.
+
+        Returns:
+            dict: status and result or error msg.
+        """
+        if city.lower() == "new york":
+            return {
+                "status": "success",
+                "report": (
+                    "The weather in New York is sunny with a temperature of 25 degrees"
+                    " Celsius (77 degrees Fahrenheit)."
+                ),
+            }
+        else:
+            return {
+                "status": "error",
+                "error_message": f"Weather information for '{city}' is not available.",
+            }
+
+
+    # Create an agent with tools
+    root_agent = Agent(
+        name="weather_agent",
+        model="gemini-2.5-flash",
+        description="Agent to answer questions using weather tools.",
+        instruction="You must use the available tools to find an answer.",
+        tools=[get_weather],
+    )
+    ```
+
+=== "TypeScript"
+
+    ```typescript
+    // weather_agent_ts/agent.ts
+
+    import { LlmAgent, FunctionTool } from '@google/adk';
+    import { z } from 'zod';
+
+    // Define the tool schema
+    const getWeatherSchema = z.object({
+        city: z.string().describe('The name of the city for the weather report'),
+    });
+
+    // Define a tool function
+    const getWeatherTool = new FunctionTool({
+        name: 'get_weather',
+        description: 'Retrieves the current weather report for a specified city.',
+        parameters: getWeatherSchema,
+        execute: async ({ city }) => {
+            if (city.toLowerCase() === 'new york') {
+                return {
+                    status: 'success',
+                    report: 'The weather in New York is sunny with a temperature of 25 degrees Celsius (77 degrees Fahrenheit).',
+                };
+            } else {
+                return {
+                    status: 'error',
+                    error_message: `Weather information for '${city}' is not available.`,
+                };
+            }
+        },
+    });
+
+    // Create an agent with tools
+    export const rootAgent = new LlmAgent({
+        name: 'weather_agent',
+        model: 'gemini-2.5-flash',
+        description: 'Agent to answer questions using weather tools.',
+        instruction: 'You must use the available tools to find an answer.',
+        tools: [getWeatherTool],
+    });
+    ```
 
 ## Cloud Trace Setup
 
@@ -76,16 +125,29 @@ root_agent = Agent(
 
 #### Agent Engine Deployment - from ADK CLI
 
-You can enable cloud tracing by adding `--trace_to_cloud` flag when deploying your agent using `adk deploy agent_engine` command for agent engine deployment.
+You can enable cloud tracing by adding `--trace_to_cloud` flag when deploying your agent using the `adk deploy agent_engine` command for agent engine deployment.
 
-```bash
-adk deploy agent_engine \
-    --project=$GOOGLE_CLOUD_PROJECT \
-    --region=$GOOGLE_CLOUD_LOCATION \
-    --staging_bucket=$STAGING_BUCKET \
-    --trace_to_cloud \
-    $AGENT_PATH
-```
+=== "Python"
+
+    ```bash
+    adk deploy agent_engine \
+        --project=$GOOGLE_CLOUD_PROJECT \
+        --region=$GOOGLE_CLOUD_LOCATION \
+        --staging_bucket=$STAGING_BUCKET \
+        --trace_to_cloud \
+        $AGENT_PATH
+    ```
+
+=== "TypeScript"
+
+    ```bash
+    npx @google/adk-devtools deploy agent_engine \
+        --project=$GOOGLE_CLOUD_PROJECT \
+        --region=$GOOGLE_CLOUD_LOCATION \
+        --staging_bucket=$STAGING_BUCKET \
+        --trace_to_cloud \
+        $AGENT_PATH
+    ```
 
 #### Agent Engine Deployment - from Python SDK
 
@@ -131,15 +193,27 @@ remote_app = agent_engines.create(
 
 #### Cloud Run Deployment - from ADK CLI
 
-You can enable cloud tracing by adding `--trace_to_cloud` flag when deploying your agent using `adk deploy cloud_run` command for cloud run deployment.
+You can enable cloud tracing by adding `--trace_to_cloud` flag when deploying your agent using the `adk deploy cloud_run` command for cloud run deployment.
 
-```bash
-adk deploy cloud_run \
-    --project=$GOOGLE_CLOUD_PROJECT \
-    --region=$GOOGLE_CLOUD_LOCATION \
-    --trace_to_cloud \
-    $AGENT_PATH
-```
+=== "Python"
+
+    ```bash
+    adk deploy cloud_run \
+        --project=$GOOGLE_CLOUD_PROJECT \
+        --region=$GOOGLE_CLOUD_LOCATION \
+        --trace_to_cloud \
+        $AGENT_PATH
+    ```
+
+=== "TypeScript"
+
+    ```bash
+    npx @google/adk-devtools deploy cloud_run \
+        --project=$GOOGLE_CLOUD_PROJECT \
+        --region=$GOOGLE_CLOUD_LOCATION \
+        --trace_to_cloud \
+        $AGENT_PATH
+    ```
 
 If you want to enable cloud tracing and using a customized agent service deployment on Cloud Run, you can refer to the [Setup for Customized Deployment](#setup-for-customized-deployment) section below
 
@@ -183,63 +257,128 @@ if __name__ == "__main__":
 
 #### From Customized Agent Runner
 
-If you want to fully customize your ADK agent runtime, you can enable cloud tracing by using `CloudTraceSpanExporter` module from Opentelemetry.
+If you want to fully customize your ADK agent runtime, you can enable cloud tracing by using the OpenTelemetry Cloud Trace exporter.
 
-```python
-# agent_runner.py
+=== "Python"
 
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from weather_agent.agent import root_agent as weather_agent
-from google.genai.types import Content, Part
-from opentelemetry import trace
-from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
-from opentelemetry.sdk.trace import export
-from opentelemetry.sdk.trace import TracerProvider
+    ```python
+    # agent_runner.py
 
-APP_NAME = "weather_agent"
-USER_ID = "u_123"
-SESSION_ID = "s_123"
+    from google.adk.runners import Runner
+    from google.adk.sessions import InMemorySessionService
+    from weather_agent.agent import root_agent as weather_agent
+    from google.genai.types import Content, Part
+    from opentelemetry import trace
+    from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+    from opentelemetry.sdk.trace import export
+    from opentelemetry.sdk.trace import TracerProvider
 
-provider = TracerProvider()
-processor = export.BatchSpanProcessor(
-    CloudTraceSpanExporter(project_id="{your-project-id}")
-)
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
+    APP_NAME = "weather_agent"
+    USER_ID = "u_123"
+    SESSION_ID = "s_123"
 
-session_service = InMemorySessionService()
-runner = Runner(agent=weather_agent, app_name=APP_NAME, session_service=session_service)
-
-
-async def main():
-    session = await session_service.get_session(
-        app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
+    provider = TracerProvider()
+    processor = export.BatchSpanProcessor(
+        CloudTraceSpanExporter(project_id="{your-project-id}")
     )
-    if session is None:
-        session = await session_service.create_session(
+    provider.add_span_processor(processor)
+    trace.set_tracer_provider(provider)
+
+    session_service = InMemorySessionService()
+    runner = Runner(agent=weather_agent, app_name=APP_NAME, session_service=session_service)
+
+
+    async def main():
+        session = await session_service.get_session(
             app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
         )
+        if session is None:
+            session = await session_service.create_session(
+                app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
+            )
 
-    user_content = Content(
-        role="user", parts=[Part(text="what's weather in paris?")]
-    )
+        user_content = Content(
+            role="user", parts=[Part(text="what's weather in paris?")]
+        )
 
-    final_response_content = "No response"
-    async for event in runner.run_async(
-        user_id=USER_ID, session_id=SESSION_ID, new_message=user_content
-    ):
-        if event.is_final_response() and event.content and event.content.parts:
-            final_response_content = event.content.parts[0].text
+        final_response_content = "No response"
+        async for event in runner.run_async(
+            user_id=USER_ID, session_id=SESSION_ID, new_message=user_content
+        ):
+            if event.is_final_response() and event.content and event.content.parts:
+                final_response_content = event.content.parts[0].text
 
-    print(final_response_content)
+        print(final_response_content)
 
 
-if __name__ == "__main__":
-    import asyncio
+    if __name__ == "__main__":
+        import asyncio
 
-    asyncio.run(main())
-```
+        asyncio.run(main())
+    ```
+
+=== "TypeScript"
+
+    ```typescript
+    // agent_runner.ts
+
+    import { Runner, InMemorySessionService, getGcpExporters, maybeSetOtelProviders } from '@google/adk';
+    import { rootAgent as weatherAgent } from './weather_agent_ts/agent';
+
+    const APP_NAME = 'weather_agent';
+    const USER_ID = 'u_123';
+    const SESSION_ID = 's_123';
+
+    async function main() {
+        // Set up Google Cloud Trace exporters
+        const gcpExporters = await getGcpExporters({ enableTracing: true });
+        maybeSetOtelProviders([gcpExporters]);
+
+        const sessionService = new InMemorySessionService();
+        const runner = new Runner({
+            agent: weatherAgent,
+            appName: APP_NAME,
+            sessionService,
+        });
+
+        let session = await sessionService.getSession({
+            appName: APP_NAME,
+            userId: USER_ID,
+            sessionId: SESSION_ID,
+        });
+
+        if (!session) {
+            session = await sessionService.createSession({
+                appName: APP_NAME,
+                userId: USER_ID,
+                sessionId: SESSION_ID,
+            });
+        }
+
+        const userContent = {
+            role: 'user' as const,
+            parts: [{ text: "what's weather in paris?" }],
+        };
+
+        let finalResponseContent = 'No response';
+        for await (const event of runner.runAsync({
+            userId: USER_ID,
+            sessionId: SESSION_ID,
+            newMessage: userContent,
+        })) {
+            if (event.isFinalResponse() && event.content?.parts) {
+                const textPart = event.content.parts.find(p => 'text' in p);
+                if (textPart && 'text' in textPart) {
+                    finalResponseContent = textPart.text;
+                }
+            }
+        }
+
+        console.log(finalResponseContent);
+    }
+
+    main();
+    ```
 
 ## Inspect Cloud Traces
 
